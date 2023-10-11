@@ -1,8 +1,5 @@
 package org.wso2.carbon.identity.rest.api.user.association.v1.dto;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.wso2.carbon.identity.rest.api.user.association.v1.dto.PropertyDTO;
 
 import io.swagger.annotations.*;
 import com.fasterxml.jackson.annotation.*;
@@ -14,28 +11,28 @@ import javax.validation.constraints.NotNull;
 
 
 @ApiModel(description = "")
-public class AssociationUserRequestDTO  {
+public class FederatedAssociationUserRequestDTO  {
   
   
   
-  private String userId = null;
+  private String username = null;
   
   
   private String password = null;
   
   
-  private List<PropertyDTO> properties = new ArrayList<PropertyDTO>();
+  private String subjectToken = null;
 
   
   /**
    **/
   @ApiModelProperty(value = "")
-  @JsonProperty("userId")
-  public String getUserId() {
-    return userId;
+  @JsonProperty("username")
+  public String getUsername() {
+    return username;
   }
-  public void setUserId(String userId) {
-    this.userId = userId;
+  public void setUsername(String username) {
+    this.username = username;
   }
 
   
@@ -54,12 +51,12 @@ public class AssociationUserRequestDTO  {
   /**
    **/
   @ApiModelProperty(value = "")
-  @JsonProperty("properties")
-  public List<PropertyDTO> getProperties() {
-    return properties;
+  @JsonProperty("subjectToken")
+  public String getSubjectToken() {
+    return subjectToken;
   }
-  public void setProperties(List<PropertyDTO> properties) {
-    this.properties = properties;
+  public void setSubjectToken(String subjectToken) {
+    this.subjectToken = subjectToken;
   }
 
   
@@ -67,11 +64,11 @@ public class AssociationUserRequestDTO  {
   @Override
   public String toString()  {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AssociationUserRequestDTO {\n");
+    sb.append("class FederatedAssociationUserRequestDTO {\n");
     
-    sb.append("  userId: ").append(userId).append("\n");
+    sb.append("  username: ").append(username).append("\n");
     sb.append("  password: ").append(password).append("\n");
-    sb.append("  properties: ").append(properties).append("\n");
+    sb.append("  subjectToken: ").append(subjectToken).append("\n");
     sb.append("}\n");
     return sb.toString();
   }

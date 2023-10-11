@@ -91,8 +91,7 @@ paths:
           description:  User details to be associated. userId should be the fully qualified username of the user.
           required: true
           schema:
-            allOf:
-              - $ref: '#/definitions/AssociationUserRequest'
+            $ref: '#/definitions/AssociationUserRequest'
             example: |
               {
                 "userId": "john",
@@ -388,6 +387,56 @@ paths:
           description: Server Error
           schema:
             $ref: '#/definitions/Error'
+    post:
+      tags:
+        - admin
+      summary: Add a federated association for a user
+      description: |
+        This API is used to add a federated association for the user.<br>
+        <b>Permission required:</b>
+            * /permission/admin/manage/identity/user/association/update
+        <b>Scope required:</b>
+            * internal_user_association_update
+      parameters:
+        - name: user-id
+          in: path
+          required: true
+          description: user id
+          type: string
+        - name: federated-association
+          in: body
+          description:  User details to be associated.
+          required: true
+          schema:
+            $ref: '#/definitions/FederatedAssociationUserRequest'
+            example: |
+              {
+                "subject_token": "john",
+                "username": "username",
+                "password": "userpassword"
+              }
+      responses:
+        201:
+          description: Successful operation
+          schema:
+            type: 'array'
+            items:
+              $ref: '#/definitions/FederatedAssociation'
+        204:
+          description: No content
+        404:
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized request
+        403:
+          description: Resource Forbidden
+        500:
+          description: Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
     delete:
       parameters:
         - name: user-id
@@ -565,6 +614,21 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/Property'
+  #-----------------------------------------------------
+  # The FederatedAssociationUserRequest Association User Request
+  #-----------------------------------------------------
+  FederatedAssociationUserRequest:
+    type: object
+    properties:
+      username:
+        type: string
+        example: john
+      password:
+        type: string
+        example: userpassword
+      subject_token:
+        type: string
+        example: ey
 securityDefinitions:
   BasicAuth:
     type: basic

@@ -1,99 +1,91 @@
-/*
- * Copyright (c) 2020, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.wso2.carbon.identity.rest.api.user.association.v1.dto;
+
 
 import io.swagger.annotations.*;
 import com.fasterxml.jackson.annotation.*;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
+
+
+
+
 
 @ApiModel(description = "")
-public class IdpDTO {
+public class IdpDTO  {
+  
+  
+  
+  private String id = null;
+  
+  
+  private String name = null;
+  
+  
+  private String displayName = null;
+  
+  
+  private String imageUrl = null;
 
-    @Valid 
-    private String id = null;
+  
+  /**
+   **/
+  @ApiModelProperty(value = "")
+  @JsonProperty("id")
+  public String getId() {
+    return id;
+  }
+  public void setId(String id) {
+    this.id = id;
+  }
 
-    @Valid 
-    private String name = null;
+  
+  /**
+   **/
+  @ApiModelProperty(value = "")
+  @JsonProperty("name")
+  public String getName() {
+    return name;
+  }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    @Valid 
-    private String displayName = null;
+  
+  /**
+   **/
+  @ApiModelProperty(value = "")
+  @JsonProperty("displayName")
+  public String getDisplayName() {
+    return displayName;
+  }
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
+  }
 
-    @Valid 
-    private String imageUrl = null;
+  
+  /**
+   **/
+  @ApiModelProperty(value = "")
+  @JsonProperty("imageUrl")
+  public String getImageUrl() {
+    return imageUrl;
+  }
+  public void setImageUrl(String imageUrl) {
+    this.imageUrl = imageUrl;
+  }
 
-    /**
-    **/
-    @ApiModelProperty(value = "")
-    @JsonProperty("id")
-    public String getId() {
-        return id;
-    }
-    public void setId(String id) {
-        this.id = id;
-    }
+  
 
-    /**
-    **/
-    @ApiModelProperty(value = "")
-    @JsonProperty("name")
-    public String getName() {
-        return name;
-    }
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-    **/
-    @ApiModelProperty(value = "")
-    @JsonProperty("displayName")
-    public String getDisplayName() {
-        return displayName;
-    }
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    /**
-    **/
-    @ApiModelProperty(value = "")
-    @JsonProperty("imageUrl")
-    public String getImageUrl() {
-        return imageUrl;
-    }
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
-    @Override
-    public String toString() {
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("class IdpDTO {\n");
-        
-        sb.append("    id: ").append(id).append("\n");
-        sb.append("    name: ").append(name).append("\n");
-        sb.append("    displayName: ").append(displayName).append("\n");
-        sb.append("    imageUrl: ").append(imageUrl).append("\n");
-        
-        sb.append("}\n");
-        return sb.toString();
-    }
+  @Override
+  public String toString()  {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class IdpDTO {\n");
+    
+    sb.append("  id: ").append(id).append("\n");
+    sb.append("  name: ").append(name).append("\n");
+    sb.append("  displayName: ").append(displayName).append("\n");
+    sb.append("  imageUrl: ").append(imageUrl).append("\n");
+    sb.append("}\n");
+    return sb.toString();
+  }
 }
