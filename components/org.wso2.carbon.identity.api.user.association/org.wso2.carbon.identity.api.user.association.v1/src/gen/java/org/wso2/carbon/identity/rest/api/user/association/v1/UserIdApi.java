@@ -1,5 +1,6 @@
 package org.wso2.carbon.identity.rest.api.user.association.v1;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.wso2.carbon.identity.rest.api.user.association.v1.dto.*;
 import org.wso2.carbon.identity.rest.api.user.association.v1.UserIdApiService;
 import org.wso2.carbon.identity.rest.api.user.association.v1.factories.UserIdApiServiceFactory;
@@ -26,7 +27,8 @@ import javax.ws.rs.*;
 @io.swagger.annotations.Api(value = "/{user-id}", description = "the {user-id} API")
 public class UserIdApi  {
 
-   private final UserIdApiService delegate = UserIdApiServiceFactory.getUserIdApi();
+    @Autowired
+    private UserIdApiService delegate;
 
     @DELETE
     @Path("/associations")
