@@ -26,6 +26,7 @@ public class AssociationEndpointConstants {
     public static final String FEDERATED_USER_ASSOCIATIONS_PATH_COMPONENT = "/%s/federated-associations";
     public static final String ME_CONTEXT = "me";
     public static final String ERROR_MSG_DELIMITER = "-";
+    public static final String JWKS_URI = "jwksUri";
 
     /**
      * Enum for error messages.

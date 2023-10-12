@@ -15,17 +15,25 @@
  */
 package org.wso2.carbon.identity.rest.api.user.association.v1.core;
 
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.api.user.common.ContextLoader;
 import org.wso2.carbon.identity.api.user.common.error.APIError;
 import org.wso2.carbon.identity.api.user.common.error.ErrorResponse;
 import org.wso2.carbon.identity.api.user.common.function.UserToUniqueId;
+import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.application.common.model.User;
+import org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants;
+import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.rest.api.user.association.v1.dto.AssociationUserRequestDTO;
 import org.wso2.carbon.identity.rest.api.user.association.v1.dto.FederatedAssociationDTO;
+import org.wso2.carbon.identity.rest.api.user.association.v1.dto.FederatedAssociationUserRequestDTO;
 import org.wso2.carbon.identity.rest.api.user.association.v1.dto.IdpDTO;
 import org.wso2.carbon.identity.rest.api.user.association.v1.dto.UserDTO;
+import org.wso2.carbon.identity.rest.api.user.association.v1.util.TokenValidationUtils;
 import org.wso2.carbon.identity.rest.api.user.association.v1.util.UserAssociationServiceHolder;
 import org.wso2.carbon.identity.user.account.association.dto.UserAccountAssociationDTO;
 import org.wso2.carbon.identity.user.account.association.exception.UserAccountAssociationClientException;
@@ -33,11 +41,20 @@ import org.wso2.carbon.identity.user.account.association.exception.UserAccountAs
 import org.wso2.carbon.identity.user.profile.mgt.association.federation.exception.FederatedAssociationManagerClientException;
 import org.wso2.carbon.identity.user.profile.mgt.association.federation.exception.FederatedAssociationManagerException;
 import org.wso2.carbon.identity.user.profile.mgt.association.federation.model.FederatedAssociation;
+import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
+import org.wso2.carbon.idp.mgt.IdentityProviderManager;
+import org.wso2.carbon.user.api.UserStoreException;
+import org.wso2.carbon.user.core.UserRealm;
+import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
+import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.user.core.util.UserCoreUtil;
+import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.ws.rs.core.Response;
 
 import static org.wso2.carbon.identity.api.user.common.Constants.ERROR_CODE_DELIMITER;
@@ -138,6 +155,163 @@ public class UserAssociationService {
             throw handleFederatedAssociationManagerException(e, "Error while deleting federated user association: "
                     + userId);
         }
+    }
+
+    public void createFederatedUserAccountAssociation(String userId, FederatedAssociationUserRequestDTO
+            federatedAssociationUserRequestDTO) {
+
+        String username = federatedAssociationUserRequestDTO.getUsername();
+        String password = federatedAssociationUserRequestDTO.getPassword();
+        String tenantDomain = ContextLoader.getTenantDomainFromContext();
+        try {
+            if (username == null) {
+                throw new FederatedAssociationManagerClientException("Username is missing in the request");
+            }
+
+            if (password == null) {
+                throw new FederatedAssociationManagerClientException("Password is missing in the request");
+            }
+
+            if (federatedAssociationUserRequestDTO.getSubjectToken() == null) {
+                throw new FederatedAssociationManagerClientException("Subject token is missing in the request");
+            }
+
+            JWTClaimsSet jwtClaimsSet = validateSubjectToken(federatedAssociationUserRequestDTO.getSubjectToken(),
+                    tenantDomain);
+
+            String jwtIssuer = jwtClaimsSet.getIssuer();
+            String subject = jwtClaimsSet.getSubject();
+            // Map<String, Object> customClaims = new HashMap<>(jwtClaimsSet.getClaims());
+
+            // use the username and password and validate the local user account
+            if (!validateLocalUser(username, password)) {
+                throw new FederatedAssociationManagerClientException("Local user validation failed");
+            }
+
+            org.wso2.carbon.user.core.common.User localUser = getLocalUser(username);
+            if (localUser == null) {
+                throw new FederatedAssociationManagerException("Could not resolve local user: " + username);
+            }
+
+            UserAssociationServiceHolder.getFederatedAssociationManager().createFederatedAssociationWithIdpResourceId(
+                new User(localUser), getIDP(jwtIssuer, tenantDomain).getResourceId(), subject);
+
+
+        } catch (FederatedAssociationManagerException e) {
+            throw handleFederatedAssociationManagerException(e, "Error while adding association for user:" + userId);
+        }
+
+
+    }
+
+    private JWTClaimsSet validateSubjectToken(String token, String tenantDomain) throws
+            FederatedAssociationManagerException {
+
+        SignedJWT signedJWT;
+        JWTClaimsSet jwtClaimsSet;
+        try {
+            signedJWT = SignedJWT.parse(token);
+            jwtClaimsSet = signedJWT.getJWTClaimsSet();
+            if (jwtClaimsSet == null) {
+                throw new FederatedAssociationManagerClientException("Claim values are empty in the given token");
+            }
+
+        } catch (ParseException e) {
+            throw new FederatedAssociationManagerException(e.getMessage());
+        }
+
+        TokenValidationUtils.validateTokenClaims(jwtClaimsSet);
+        IdentityProvider idp = getIDP(jwtClaimsSet.getIssuer(), tenantDomain);
+//        if (!TokenValidationUtils.validateTokenSignature(signedJWT, idp)) {
+//            throw new FederatedAssociationManagerClientException("Token signature validation failed");
+//        }
+
+        if (TokenValidationUtils.isTokenExpired(jwtClaimsSet.getExpirationTime().getTime())) {
+            throw new FederatedAssociationManagerClientException("Token is expired");
+        }
+
+        return jwtClaimsSet;
+    }
+
+    private boolean validateLocalUser(String username, String password) throws FederatedAssociationManagerException {
+
+        AbstractUserStoreManager userStoreManager = getUserStoreManager();
+        try {
+            return userStoreManager.authenticate(username, password);
+        } catch (org.wso2.carbon.user.core.UserStoreException e) {
+            throw new FederatedAssociationManagerException("Local user validation failed", e);
+        }
+    }
+
+    private org.wso2.carbon.user.core.common.User getLocalUser(String username)
+            throws FederatedAssociationManagerException {
+
+        org.wso2.carbon.user.core.common.User localUser = null;
+        AbstractUserStoreManager userStoreManager = getUserStoreManager();
+        try {
+            if (userStoreManager.isExistingUser(username)) {
+                localUser = userStoreManager.getUser(null, username);
+            }
+        } catch (UserStoreException e) {
+            throw new FederatedAssociationManagerException(
+                    "Error while resolving local user for username: " + username, e);
+        }
+        return localUser;
+    }
+
+    private AbstractUserStoreManager getUserStoreManager()
+            throws FederatedAssociationManagerException {
+
+        RealmService realmService = UserAssociationServiceHolder.getRealmService();
+        String tenantDomain = ContextLoader.getTenantDomainFromContext();
+        AbstractUserStoreManager userStoreManager;
+
+        if (StringUtils.isEmpty(tenantDomain)) {
+            tenantDomain = MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
+        }
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+
+        try {
+            UserRealm realm = (UserRealm) realmService.getTenantUserRealm(tenantId);
+
+            if (realm.getUserStoreManager().getSecondaryUserStoreManager() != null) {
+                userStoreManager = (AbstractUserStoreManager) realm.getUserStoreManager()
+                        .getSecondaryUserStoreManager();
+            } else {
+                userStoreManager = (AbstractUserStoreManager) realm.getUserStoreManager();
+            }
+        } catch (UserStoreException e) {
+            throw new FederatedAssociationManagerException("Error while getting user store manager: " + e.getMessage());
+        }
+        return userStoreManager;
+    }
+
+    public static IdentityProvider getIDP(String jwtIssuer, String tenantDomain)
+            throws FederatedAssociationManagerException {
+
+        // check if a registered IDP exists for the given issuer name. If not the request fails
+        IdentityProvider identityProvider;
+        try {
+            identityProvider =
+                    IdentityProviderManager.getInstance().getIdPByMetadataProperty(IdentityApplicationConstants
+                            .IDP_ISSUER_NAME, jwtIssuer, tenantDomain, true);
+            if (identityProvider == null) {
+                identityProvider = IdentityProviderManager.getInstance().getIdPByName(
+                        jwtIssuer, tenantDomain, true);
+            }
+
+        } catch (IdentityProviderManagementException e) {
+            throw new FederatedAssociationManagerException("Error while getting the Federated Identity Provider", e);
+        }
+        if (identityProvider == null) {
+            throw new FederatedAssociationManagerClientException("No IDP found for the JWT with issuer name "
+                    + ":" + " " + jwtIssuer);
+        }
+        if (!identityProvider.isEnable()) {
+            throw new FederatedAssociationManagerClientException("IDP is not enabled for the JWT with issuer name "
+                    + ":" + " " + jwtIssuer);
+        }
+        return identityProvider;
     }
 
     private List<UserDTO> getUserAssociationsDTOs(UserAccountAssociationDTO[] accountAssociationsOfUser) {

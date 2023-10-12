@@ -6,9 +6,16 @@ import org.wso2.carbon.identity.api.user.common.function.UniqueIdToUser;
 import org.wso2.carbon.identity.application.common.model.User;
 import org.wso2.carbon.identity.rest.api.user.association.v1.UserIdApiService;
 import org.wso2.carbon.identity.rest.api.user.association.v1.core.UserAssociationService;
+import org.wso2.carbon.identity.rest.api.user.association.v1.dto.FederatedAssociationUserRequestDTO;
 import org.wso2.carbon.identity.rest.api.user.association.v1.util.UserAssociationServiceHolder;
 
+import java.net.URI;
+
 import javax.ws.rs.core.Response;
+
+import static org.wso2.carbon.identity.api.user.common.ContextLoader.buildURIForHeader;
+import static org.wso2.carbon.identity.rest.api.user.association.v1.AssociationEndpointConstants.FEDERATED_USER_ASSOCIATIONS_PATH_COMPONENT;
+import static org.wso2.carbon.identity.rest.api.user.association.v1.AssociationEndpointConstants.V1_API_PATH_COMPONENT;
 
 /**
  * Association API service implementation for users/{userId} endpoint.
@@ -56,5 +63,19 @@ public class UserIdApiServiceImpl extends UserIdApiService {
 
         userAssociationService.deleteFederatedUserAccountAssociation(getUser(userId), id);
         return Response.noContent().build();
+    }
+
+    @Override
+    public Response userIdFederatedAssociationsPost(String userId,
+                                                    FederatedAssociationUserRequestDTO federatedAssociation) {
+
+        userAssociationService.createFederatedUserAccountAssociation(getUser(userId), federatedAssociation);
+        return Response.created(getFederatedAssociationsURI(userId)).build();
+    }
+
+    private URI getFederatedAssociationsURI(String userId) {
+
+        return buildURIForHeader(String.format(V1_API_PATH_COMPONENT + FEDERATED_USER_ASSOCIATIONS_PATH_COMPONENT,
+                userId));
     }
 }
